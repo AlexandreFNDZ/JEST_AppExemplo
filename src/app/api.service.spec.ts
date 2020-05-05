@@ -1,22 +1,15 @@
+const mockOperators = {
+  retry: jest.fn(() => true),
+  catchError: jest.fn(() => true),
+  tap: jest.fn(() => true)
+};
+jest.mock('rxjs/operators', () => (mockOperators));
+
 import { fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { HttpParams, HttpResponse, HttpHeaders, HttpErrorResponse, HttpRequest, HttpEventType } from '@angular/common/http';
 
 import { of } from 'rxjs';
 import { ApiService } from './api.service';
-
-// jest.mock('rxjs/operators', () => {
-//   return jest.fn().mockImplementation(() => {
-//     return {
-//       retry: jest.fn(),
-//       catchError: jest.fn(),
-//       tap: jest.fn()
-//     };
-//   });
-// });
-
-// const mockRetry = jest.spyOn(mockOperators, 'retry').mockImplementation(() => jest.fn());
-// const mockCatchError = jest.spyOn(mockOperators, 'catchError').mockImplementation(() => jest.fn());
-// const mockTap = jest.spyOn(mockOperators, 'tap').mockImplementation(() => jest.fn());
 
 describe('ApiService', () => {
   let apiService: ApiService;
@@ -45,7 +38,6 @@ describe('ApiService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.resetAllMocks();
 
     mockHttpClient = {
       get: jest.fn()
@@ -187,7 +179,7 @@ describe('ApiService', () => {
       expect(mockAlert).toHaveBeenCalledWith(errorMessage);
     }));
   });
-
+  
   it('should receive first page of products when call Get', fakeAsync(() => {
     // Given
     let bodyResponseResult;
@@ -224,13 +216,11 @@ describe('ApiService', () => {
 
     // When
     apiService.get();
-    console.log( mockHttpClientResponse.pipe.mock.calls[0][0] );
 
     // Then
     expect(mockHttpClient.get).toHaveBeenCalled();
     expect(mockHttpClientResponse.pipe).toHaveBeenCalled();
-    expect(mockHttpClientResponse.pipe).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.any(Function));
-    // expect(parseLinkSpy).toHaveBeenCalled();
+    expect(mockHttpClientResponse.pipe).toHaveBeenCalledWith(true, true, true);
   });
 
 
