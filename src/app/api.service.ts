@@ -62,7 +62,6 @@ export class ApiService {
       retry(3), 
       catchError(this.handleError), 
       tap(res => {
-        console.log(res.headers.get('Link'));
         this.parseLinkHeader(res.headers.get('Link'));
       })
     );
@@ -75,8 +74,7 @@ export class ApiService {
     ).pipe(
       retry(3),
       catchError(this.handleError), 
-      tap(res => {  
-        console.log(res.headers.get('Link'));  
+      tap(res => {   
         this.parseLinkHeader(res.headers.get('Link'));
       })
     );  

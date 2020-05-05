@@ -1,7 +1,7 @@
 const mockOperators = {
   retry: jest.fn(() => true),
   catchError: jest.fn(() => true),
-  tap: jest.fn(() => true)
+  tap: jest.fn((param) => true)
 };
 jest.mock('rxjs/operators', () => (mockOperators));
 
@@ -179,75 +179,118 @@ describe('ApiService', () => {
       expect(mockAlert).toHaveBeenCalledWith(errorMessage);
     }));
   });
-  
-  it('should receive first page of products when call Get', fakeAsync(() => {
-    // Given
-    let bodyResponseResult;
-    const mockServerUrl = "http://localhost:3000/products";
-    const mockOptionsParam = { 
-      params: new HttpParams({ fromString: "_page=1&_limit=4" }), 
-      observe: "response" 
-    };
-    const mockHeader = new HttpHeaders(mockLinkHeader);
-    const mockHttpResponse = new HttpResponse<any>({ body: mockProduts, headers: mockHeader });
-    mockHttpClient.get.mockImplementationOnce(() => asyncData(mockHttpResponse));
 
-    // When
-    apiService.get().subscribe((data) => {
-      bodyResponseResult = data.body;
-    });
-    flushMicrotasks();
-
-    // Then
-    expect(mockHttpClient.get).toHaveBeenCalledWith(mockServerUrl, mockOptionsParam);
-    expect(bodyResponseResult).toEqual(mockProduts);
-  }));
-
-
-
-
-  it('should receive first page of products when call Get without observable', () => {
-    // Given
+  describe('should call first page when call...', () => {
     const mockHttpClientResponse = {
       pipe: jest.fn()
     }
-    const parseLinkSpy = jest.spyOn(apiService, 'parseLinkHeader');
-    mockHttpClient.get.mockImplementationOnce(() => mockHttpClientResponse);
+    const mockRes = {headers: {get: jest.fn((param) => (param))}};
 
-    // When
-    apiService.get();
+    beforeEach(() => {
+      // Given
+      apiService.parseLinkHeader = jest.fn();
+      mockHttpClient.get.mockImplementationOnce(() => mockHttpClientResponse);
+    });
 
-    // Then
-    expect(mockHttpClient.get).toHaveBeenCalled();
-    expect(mockHttpClientResponse.pipe).toHaveBeenCalled();
-    expect(mockHttpClientResponse.pipe).toHaveBeenCalledWith(true, true, true);
+    afterEach(() => {
+      jest.clearAllMocks();
+    })
+
+    it('get() - without observable', () => {  
+      // When
+      apiService.get();
+      mockOperators.tap.mock.calls[0][0](mockRes);
+  
+      // Then
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(1);
+      expect(mockHttpClientResponse.pipe).toHaveBeenCalledTimes(1);
+      expect(mockHttpClientResponse.pipe).toHaveBeenCalledWith(true, true, true);
+  
+      expect(mockOperators.retry).toBeCalledTimes(1);
+      expect(mockOperators.retry).toBeCalledWith(3);
+      expect(mockOperators.catchError).toHaveBeenCalledTimes(1);
+      expect(mockOperators.catchError).toBeCalledWith(expect.any(Function));
+      expect(mockOperators.tap).toHaveBeenCalledTimes(1);
+      expect(mockOperators.tap).toHaveBeenCalledWith(expect.any(Function));
+  
+      expect(apiService.parseLinkHeader).toHaveBeenCalledTimes(1);
+      expect(mockRes.headers.get).toHaveBeenCalledTimes(1);
+      expect(mockRes.headers.get).toHaveBeenCalledWith('Link');
+    });
+  
+    it('getRequestToUrl() - without observable', () => {  
+      // When
+      apiService.sendGetRequestToUrl('');
+      mockOperators.tap.mock.calls[0][0](mockRes);
+  
+      // Then
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(1);
+      expect(mockHttpClientResponse.pipe).toHaveBeenCalledTimes(1);
+      expect(mockHttpClientResponse.pipe).toHaveBeenCalledWith(true, true, true);
+  
+      expect(mockOperators.retry).toBeCalledTimes(1);
+      expect(mockOperators.retry).toBeCalledWith(3);
+      expect(mockOperators.catchError).toHaveBeenCalledTimes(1);
+      expect(mockOperators.catchError).toBeCalledWith(expect.any(Function));
+      expect(mockOperators.tap).toHaveBeenCalledTimes(1);
+      expect(mockOperators.tap).toHaveBeenCalledWith(expect.any(Function));
+  
+      expect(apiService.parseLinkHeader).toHaveBeenCalledTimes(1);
+      expect(mockRes.headers.get).toHaveBeenCalledTimes(1);
+      expect(mockRes.headers.get).toHaveBeenCalledWith('Link');
+    });
   });
 
 
 
 
-  it('should receive first page of products when call GetRequestUrl', fakeAsync(() => {
-    // Given
-    let responseResult;
-    const mockServerUrl = "http://localhost:3000/products?_page=1&_limit=4";
-    const mockOptionsParam = {  
-      observe: "response" 
-    };
-    const mockHeader = new HttpHeaders(mockLinkHeader);
-    const mockHttpResponse = new HttpResponse<any>({ body: mockProduts, headers: mockHeader });
-    mockHttpClient.get.mockImplementationOnce(() => asyncData(mockHttpResponse));
-    const parseLinkSpy = jest.spyOn(apiService, 'parseLinkHeader');
 
-    // When
-    apiService.sendGetRequestToUrl(mockServerUrl).subscribe((data) => {
-      responseResult = data;
-    });
-    flushMicrotasks();
 
-    // Then
-    expect(mockHttpClient.get).toHaveBeenCalledWith(mockServerUrl, mockOptionsParam);
-    expect(responseResult.body).toEqual(mockProduts);
-    expect(parseLinkSpy).toHaveBeenCalledTimes(1);
-    expect(parseLinkSpy).toHaveBeenCalledWith(responseResult.headers.get('Link'));
-  }));
+  // it('should receive first page of products when call Get', fakeAsync(() => {
+  //   // Given
+  //   let bodyResponseResult;
+  //   const mockServerUrl = "http://localhost:3000/products";
+  //   const mockOptionsParam = { 
+  //     params: new HttpParams({ fromString: "_page=1&_limit=4" }), 
+  //     observe: "response" 
+  //   };
+  //   const mockHeader = new HttpHeaders(mockLinkHeader);
+  //   const mockHttpResponse = new HttpResponse<any>({ body: mockProduts, headers: mockHeader });
+  //   mockHttpClient.get.mockImplementationOnce(() => asyncData(mockHttpResponse));
+
+  //   // When
+  //   apiService.get().subscribe((data) => {
+  //     bodyResponseResult = data.body;
+  //   });
+  //   flushMicrotasks();
+
+  //   // Then
+  //   expect(mockHttpClient.get).toHaveBeenCalledWith(mockServerUrl, mockOptionsParam);
+  //   expect(bodyResponseResult).toEqual(mockProduts);
+  // }));
+
+  // it('should receive first page of products when call GetRequestUrl', fakeAsync(() => {
+  //   // Given
+  //   let responseResult;
+  //   const mockServerUrl = "http://localhost:3000/products?_page=1&_limit=4";
+  //   const mockOptionsParam = {  
+  //     observe: "response" 
+  //   };
+  //   const mockHeader = new HttpHeaders(mockLinkHeader);
+  //   const mockHttpResponse = new HttpResponse<any>({ body: mockProduts, headers: mockHeader });
+  //   mockHttpClient.get.mockImplementationOnce(() => asyncData(mockHttpResponse));
+  //   const parseLinkSpy = jest.spyOn(apiService, 'parseLinkHeader');
+
+  //   // When
+  //   apiService.sendGetRequestToUrl(mockServerUrl).subscribe((data) => {
+  //     responseResult = data;
+  //   });
+  //   flushMicrotasks();
+
+  //   // Then
+  //   expect(mockHttpClient.get).toHaveBeenCalledWith(mockServerUrl, mockOptionsParam);
+  //   expect(responseResult.body).toEqual(mockProduts);
+  //   expect(parseLinkSpy).toHaveBeenCalledTimes(1);
+  //   expect(parseLinkSpy).toHaveBeenCalledWith(responseResult.headers.get('Link'));
+  // }));
 });
